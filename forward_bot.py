@@ -1,39 +1,41 @@
-from telegram.ext import Application, CallbackQueryHandler
+import asyncio
+from telegram.ext import Application, MessageHandler, filters
 import requests
 
-# --- Your bot credentials ---
+# Your hardcoded values
 TELEGRAM_BOT_TOKEN = "7738310811:AAGg9hP7geVPiL4Mkv-PWsDEv-UzzpTFnkY"
-MY_BOT_USER_ID = 8197133639
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1365540345340887090/vTaZjUxIoW8b5m32iJYyaXDpYXyLBUOz-wU0i3JvHXA92NrYCDSGHMKjkP45Rjxf9dYt"
+MY_ADMIN_USER_ID = 2108081519  # YOUR Telegram User ID (not the bot's)
 
-# --- What happens when a button (deal) is clicked ---
-async def handle_callback_query(update, context):
-    query = update.callback_query
+async def forward_deal_messages(update, context):
+    message = update.message
 
-    if query and query.from_user and query.from_user.id == MY_BOT_USER_ID:
-        deal_text = query.data  # <- This grabs the callback data (the deal content)
-
-        if deal_text:
+    if message and message.from_user and message.from_user.id == MY_ADMIN_USER_ID:
+        # Only messages triggered by YOU (admin)
+        if message.text and "View on Steam" in message.text:
+            # Message must contain a Steam link
             data = {
-                "content": f"New Deal clicked: {deal_text}"  # Customize your Discord message
+                "content": message.text
             }
             response = requests.post(DISCORD_WEBHOOK_URL, json=data)
-            print(f"✅ Forwarded deal to Discord: {response.status_code}")
+            print(f"✅ Forwarded your deal to Discord! Status: {response.status_code}")
         else:
-            print("⚠️ Callback query has no data.")
+            print("Ignored message (not a Steam deal).")
     else:
-        print("⚠️ Ignored callback query from another user.")
+        print("Ignored: not admin or not a deal.")
 
 async def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    app.add_handler(CallbackQueryHandler(handle_callback_query))
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), forward_deal_messages))
 
-    print("🚀 Bot is running... ONLY listening for button clicks (callback queries).")
+    print("🚀 Bot is running... ONLY forwarding Steam deals triggered by admin (/deals).")
     await app.run_polling()
 
-if __name__ == "__main__":
-    import asyncio
+if __name__ == '__main__':
+    import sys
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())
 
 
