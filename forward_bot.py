@@ -1,11 +1,12 @@
 import asyncio
 from telegram.ext import Application, MessageHandler, filters
 import requests
+import time
 
-# Your hardcoded values
+# Hardcoded values
 TELEGRAM_BOT_TOKEN = "7738310811:AAGg9hP7geVPiL4Mkv-PWsDEv-UzzpTFnkY"
 DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1365540345340887090/vTaZjUxIoW8b5m32iJYyaXDpYXyLBUOz-wU0i3JvHXA92NrYCDSGHMKjkP45Rjxf9dYt"
-MY_ADMIN_USER_ID = 2108081519  # your real Telegram User ID
+MY_ADMIN_USER_ID = 2108081519  # Your real Telegram User ID
 
 async def forward_deal_messages(update, context):
     message = update.message
@@ -15,12 +16,16 @@ async def forward_deal_messages(update, context):
             data = {
                 "content": message.text
             }
-            response = requests.post(DISCORD_WEBHOOK_URL, json=data)
-            print(f"✅ Forwarded your deal to Discord! Status: {response.status_code}")
+            try:
+                response = requests.post(DISCORD_WEBHOOK_URL, json=data)
+                print(f"✅ Forwarded to Discord! Status: {response.status_code}")
+                time.sleep(0.8)  # Small delay to respect Discord's limits
+            except Exception as e:
+                print(f"❌ Error sending to Discord: {e}")
         else:
-            print("Ignored message (not a Steam deal).")
+            print("Ignored: Not a Steam deal.")
     else:
-        print("Ignored: not admin or not a deal.")
+        print("Ignored: Not admin or wrong message.")
 
 def main():
     app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
@@ -32,5 +37,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
